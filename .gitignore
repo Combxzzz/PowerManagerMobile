@@ -1,0 +1,44 @@
+# ==========================================
+# Global / OS
+# ==========================================
+.DS_Store
+Thumbs.db
+
+# ==========================================
+# IDEs and Editors
+# ==========================================
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+out/
+
+# ==========================================
+# Android / Gradle
+# ==========================================
+.gradle/
+build/
+**/build/
+local.properties
+.externalNativeBuild/
+.cxx/
+captures/
+*.apk
+*.aab
+.kotlin/
+
+# ==========================================
+# Python
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+dist/
+*.egg-info/
