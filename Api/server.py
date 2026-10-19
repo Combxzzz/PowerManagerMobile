@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-from Shutdown import Shutdown
+from shutdown import Shutdown
 
 
 class RequestHandler(BaseHTTPRequestHandler):

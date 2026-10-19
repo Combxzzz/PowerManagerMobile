@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-
 import math
 
 
@@ -14,7 +13,10 @@ class Shutdown:
             return False
 
         self.minutes = minutes
-        self.deadline = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+        self.deadline = (
+                datetime.now(timezone.utc)
+                + timedelta(minutes=minutes)
+        )
         self.scheduled = True
         return True
 
@@ -29,16 +31,22 @@ class Shutdown:
 
     def get_status(self) -> dict:
         return {
-            "scheduled" : self.scheduled,
-            "minutes" : self.minutes,
-            "deadline" : self.deadline.isoformat() if self.deadline else None,
-            "remaining" : self.get_remaining_seconds()
+            "scheduled": self.scheduled,
+            "minutes": self.minutes,
+            "deadline": (
+                self.deadline.isoformat()
+                if self.deadline
+                else None
+            ),
+            "remaining": self.get_remaining_seconds(),
         }
 
     def get_remaining_seconds(self) -> None | int:
         if not self.scheduled or not self.deadline:
             return None
 
-        remaining = (self.deadline - datetime.now(timezone.utc)).total_seconds()
+        remaining = (
+                self.deadline - datetime.now(timezone.utc)
+        ).total_seconds()
 
         return math.ceil(max(0, remaining))
