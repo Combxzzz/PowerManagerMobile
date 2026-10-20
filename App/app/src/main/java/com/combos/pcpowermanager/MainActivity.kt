@@ -114,7 +114,7 @@ fun PowerManagerScreen(modifier: Modifier = Modifier) {
                     }
                 }
             }
-        ) { Text(if (isSendingTest) "Testing..." else "Teste server") }
+        ) { Text(if (isSendingTest) "Testing..." else "Test server") }
 
         Row {
             for (minute in minuteList) {
