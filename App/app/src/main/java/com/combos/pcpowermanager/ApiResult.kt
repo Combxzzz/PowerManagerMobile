@@ -8,7 +8,7 @@ suspend fun checkConnection() : Boolean {
     return withContext(Dispatchers.IO) {
         try {
             val response = RetrofitClient.api.getStatus()
-            response.isSuccessful && response.body()?.get("status") == "Online"
+            response.isSuccessful && response.body()?.status == "Online"
         } catch (_: Exception) {
             false
         }

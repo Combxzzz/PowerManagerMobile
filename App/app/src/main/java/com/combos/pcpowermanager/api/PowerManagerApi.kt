@@ -5,10 +5,9 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 
 interface PowerManagerApi {
-
     @GET("status")
-    suspend fun getStatus() : Response<Map<String, String>>
+    suspend fun getStatus() : Response<StatusResponse>
 
     @POST("test")
-    suspend fun sendTestCommand() : Response<Map<String, String>>
+    suspend fun sendTestCommand() : Response<TestResponse>
 }
