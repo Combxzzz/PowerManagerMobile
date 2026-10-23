@@ -13,18 +13,18 @@ app = FastAPI(
 
 shutdown_manager = Shutdown()
 
+
 class ShutdownScheduleRequest(BaseModel):
     minutes: Literal[15, 30, 60]
+
 
 @app.get("/status")
 def get_status():
     return {"status" : "Online"}
 
-
 @app.get("/shutdown/status")
 def get_shutdown_status():
     return shutdown_manager.get_status()
-
 
 @app.post("/test")
 def test():

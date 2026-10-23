@@ -25,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.combos.pcpowermanager.ui.theme.PCPowerManagerTheme
 import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.milliseconds
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +43,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun PowerManagerScreen(modifier: Modifier = Modifier) {
     val minuteList = listOf(15, 30, 60)
+    val scope = rememberCoroutineScope()
 
     var status by remember { mutableStateOf("Idle") }
     var selectedMinutes by remember { mutableIntStateOf(0) }
@@ -52,8 +52,7 @@ fun PowerManagerScreen(modifier: Modifier = Modifier) {
     var isComputerConnected by remember { mutableStateOf(false) }
     var isCheckingConnection by remember { mutableStateOf(false) }
     var isSendingTest by remember { mutableStateOf(false) }
-
-    val scope = rememberCoroutineScope()
+    var isProcessingShutdown by remember { mutableStateOf(false) }
 
     val connectionStatus = when {
         isCheckingConnection -> "Checking connection..."
@@ -70,6 +69,21 @@ fun PowerManagerScreen(modifier: Modifier = Modifier) {
     LaunchedEffect(Unit) {
         isCheckingConnection = true
         isComputerConnected = checkConnection()
+        if (isComputerConnected) {
+            val shutdownStatus = getShutdownStatus()
+            if (shutdownStatus != null) {
+                isShutdownScheduled = shutdownStatus.scheduled
+                if (shutdownStatus.scheduled) {
+                    selectedMinutes = shutdownStatus.minutes ?: 0
+                    status = "Shutdown scheduled"
+                } else {
+                    selectedMinutes = 0
+                    status = "No shutdown scheduled"
+                }
+            } else {
+                status = "Failed to retrieve shutdown status"
+            }
+        }
         isCheckingConnection = false
     }
 
@@ -83,27 +97,53 @@ fun PowerManagerScreen(modifier: Modifier = Modifier) {
         Text(connectionStatus)
         Text("Status: $status")
         Button(
-            enabled = isComputerConnected,
+            enabled = isComputerConnected && !isProcessingShutdown,
             onClick = {
-                if (!isShutdownScheduled && selectedMinutes > 0) {
-                    isShutdownScheduled = true
-                    status = "Shutdown requested"
-                } else if (isShutdownScheduled) {
-                    isShutdownScheduled = false
-                    status = "Shutdown cancelled"
-                } else {
-                    status = "Immediate shutdown requested"
+                scope.launch {
+                    isProcessingShutdown = true
+
+                    try {
+                        if (isShutdownScheduled) {
+                            val cancelled = cancelShutdown()
+
+                            if (cancelled) {
+                                isShutdownScheduled = false
+                                selectedMinutes = 0
+                                status = "Shutdown cancelled"
+                            } else {
+                                status = "Failed to cancel shutdown"
+                            }
+                        } else if (selectedMinutes > 0) {
+                            val scheduled = scheduleShutdown(selectedMinutes)
+
+                            if (scheduled) {
+                                isShutdownScheduled = true
+                                status = "Shutdown scheduled: $selectedMinutes minutes"
+                            } else {
+                                status = "Failed to schedule shutdown"
+                            }
+                        } else {
+                            status = "Immediate shutdown is not implemented yet"
+                        }
+                    } finally {
+                        isProcessingShutdown = false
+                    }
                 }
             }
-        ) { Text(shutdownButtonText) }
+        ) { Text(
+                when {
+                    isProcessingShutdown -> "Processing..."
+                    else -> shutdownButtonText
+                }
+            )
+        }
 
         Button(
-            enabled = !isSendingTest && isComputerConnected,
+            enabled = !isSendingTest && isComputerConnected && !isProcessingShutdown,
             onClick = {
                 scope.launch {
                     isSendingTest = true
                     try {
-//                      kotlinx.coroutines.delay(2000.milliseconds)
                         status = if (sendTestCommand()) {
                             "Server received the command"
                         } else {
