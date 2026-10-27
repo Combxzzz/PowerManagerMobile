@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import math
+import subprocess
 
 
 class Shutdown:
@@ -12,22 +13,38 @@ class Shutdown:
         if minutes <= 0:
             return False
 
-        self.minutes = minutes
-        self.deadline = (
+        try:
+            subprocess.run(["shutdown", f"+{minutes}"], check=True)
+            self.minutes = minutes
+            self.deadline = (
                 datetime.now(timezone.utc)
                 + timedelta(minutes=minutes)
-        )
-        self.scheduled = True
-        return True
+            )
+            self.scheduled = True
+            return True
+        except (subprocess.CalledProcessError, OSError):
+            return False
 
     def cancel(self) -> bool:
         if not self.scheduled:
             return False
 
-        self.scheduled = False
-        self.minutes = None
-        self.deadline = None
-        return True
+        try:
+            subprocess.run(["shutdown", "-c"], check=True)
+            self.scheduled = False
+            self.minutes = None
+            self.deadline = None
+            return True
+        except (subprocess.CalledProcessError, OSError):
+            return False
+
+    def shutdown_now(self) -> bool:
+        try:
+            subprocess.run(["shutdown", "now"], check=True)
+            return True
+        except (subprocess.CalledProcessError, OSError):
+            return False
+
 
     def get_status(self) -> dict:
         return {
@@ -48,5 +65,8 @@ class Shutdown:
         remaining = (
                 self.deadline - datetime.now(timezone.utc)
         ).total_seconds()
+
+        if remaining <= 0:
+            self.scheduled = False
 
         return math.ceil(max(0, remaining))

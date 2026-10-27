@@ -54,3 +54,18 @@ def cancel_shutdown():
         "cancelled" : cancelled,
         "message" : ("Schedule cancelled" if cancelled else "No active schedule")
     }
+
+@app.post("/shutdown/now")
+def shutdown_now():
+    status = shutdown_manager.shutdown_now()
+
+    if not status:
+        raise HTTPException(
+            status_code=500,
+            detail="Could not execute immediate shutdown"
+        )
+
+    return {
+        "message" : "Shutting down now",
+        "status" : True
+    }
