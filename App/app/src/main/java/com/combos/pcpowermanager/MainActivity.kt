@@ -24,7 +24,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.combos.pcpowermanager.ui.theme.PCPowerManagerTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.seconds
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,6 +49,7 @@ fun PowerManagerScreen(modifier: Modifier = Modifier) {
 
     var status by remember { mutableStateOf("Idle") }
     var selectedMinutes by remember { mutableIntStateOf(0) }
+    var remainingSeconds by remember { mutableIntStateOf(0) }
 
     var isShutdownScheduled by remember { mutableStateOf(false) }
     var isComputerConnected by remember { mutableStateOf(false) }
@@ -66,25 +69,43 @@ fun PowerManagerScreen(modifier: Modifier = Modifier) {
         else -> "Shutdown now"
     }
 
-    LaunchedEffect(Unit) {
-        isCheckingConnection = true
-        isComputerConnected = checkConnection()
-        if (isComputerConnected) {
-            val shutdownStatus = getShutdownStatus()
-            if (shutdownStatus != null) {
-                isShutdownScheduled = shutdownStatus.scheduled
-                if (shutdownStatus.scheduled) {
-                    selectedMinutes = shutdownStatus.minutes ?: 0
-                    status = "Shutdown scheduled"
-                } else {
-                    selectedMinutes = 0
-                    status = "No shutdown scheduled"
-                }
+    suspend fun syncShutdownStatus() {
+        val shutdownStatus = getShutdownStatus()
+
+        if (shutdownStatus != null) {
+            isShutdownScheduled = shutdownStatus.scheduled
+
+            if (shutdownStatus.scheduled) {
+                selectedMinutes = shutdownStatus.minutes ?: 0
+                remainingSeconds = shutdownStatus.remaining ?: 0
             } else {
-                status = "Failed to retrieve shutdown status"
+                selectedMinutes = 0
+                remainingSeconds = 0
             }
+        } else {
+            status = "Connection lost"
+            isShutdownScheduled = false
+            isComputerConnected = false
         }
-        isCheckingConnection = false
+    }
+
+    LaunchedEffect(Unit) {
+        try {
+            isCheckingConnection = true
+            isComputerConnected = checkConnection()
+            if (isComputerConnected) {
+                syncShutdownStatus()
+            }
+        } finally {
+            isCheckingConnection = false
+        }
+    }
+
+    LaunchedEffect(isShutdownScheduled) {
+        while (isShutdownScheduled) {
+            delay(5.seconds)
+            syncShutdownStatus()
+        }
     }
 
     Column(
@@ -96,6 +117,13 @@ fun PowerManagerScreen(modifier: Modifier = Modifier) {
         Text("Power Manager")
         Text(connectionStatus)
         Text("Status: $status")
+        Text(
+            text = if (isShutdownScheduled) {
+                "Time remaining: ${remainingSeconds / 60} min ${remainingSeconds % 60} sec"
+            } else {
+                "No active shutdown"
+            }
+        )
         Button(
             enabled = isComputerConnected && !isProcessingShutdown,
             onClick = {
@@ -109,6 +137,7 @@ fun PowerManagerScreen(modifier: Modifier = Modifier) {
                             if (cancelled) {
                                 isShutdownScheduled = false
                                 selectedMinutes = 0
+                                remainingSeconds = 0
                                 status = "Shutdown cancelled"
                             } else {
                                 status = "Failed to cancel shutdown"
@@ -117,7 +146,7 @@ fun PowerManagerScreen(modifier: Modifier = Modifier) {
                             val scheduled = scheduleShutdown(selectedMinutes)
 
                             if (scheduled) {
-                                isShutdownScheduled = true
+                                syncShutdownStatus()
                                 status = "Shutdown scheduled: $selectedMinutes minutes"
                             } else {
                                 status = "Failed to schedule shutdown"
