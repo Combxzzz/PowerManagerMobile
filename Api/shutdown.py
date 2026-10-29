@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import math
 import subprocess
+from time import sleep
 
 
 class Shutdown:
@@ -38,12 +39,14 @@ class Shutdown:
         except (subprocess.CalledProcessError, OSError):
             return False
 
-    def shutdown_now(self) -> bool:
+
+    def execute_shutdown_now(self) -> None:
         try:
+            import time
+            time.sleep(1)
             subprocess.run(["shutdown", "now"], check=True)
-            return True
-        except (subprocess.CalledProcessError, OSError):
-            return False
+        except Exception as e:
+            print(f"Error during shutdown: {e}")
 
 
     def get_status(self) -> dict:

@@ -152,7 +152,17 @@ fun PowerManagerScreen(modifier: Modifier = Modifier) {
                                 status = "Failed to schedule shutdown"
                             }
                         } else {
-                            status = "Immediate shutdown is not implemented yet"
+                            val shutdownNow = shutdownNow()
+
+                            if (shutdownNow) {
+                                status = "Computer shutting down now"
+                                isComputerConnected = false
+                                isShutdownScheduled = false
+                                selectedMinutes = 0
+                                remainingSeconds = 0
+                            } else {
+                                status = "Failed to immediate shutdown"
+                            }
                         }
                     } finally {
                         isProcessingShutdown = false

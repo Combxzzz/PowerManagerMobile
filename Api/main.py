@@ -1,6 +1,6 @@
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 
 from shutdown import Shutdown
@@ -56,14 +56,10 @@ def cancel_shutdown():
     }
 
 @app.post("/shutdown/now")
-def shutdown_now():
-    status = shutdown_manager.shutdown_now()
+def shutdown_now(background_task: BackgroundTasks):
+    shutdown_manager.cancel()
 
-    if not status:
-        raise HTTPException(
-            status_code=500,
-            detail="Could not execute immediate shutdown"
-        )
+    background_task.add_task(shutdown_manager.execute_shutdown_now)
 
     return {
         "message" : "Shutting down now",

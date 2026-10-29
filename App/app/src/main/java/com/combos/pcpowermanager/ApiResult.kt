@@ -67,3 +67,14 @@ suspend fun getShutdownStatus() : ShutdownStatusResponse? {
         }
     }
 }
+
+suspend fun shutdownNow() : Boolean {
+    return withContext(Dispatchers.IO) {
+        try {
+            val response = RetrofitClient.api.shutdownNow()
+            response.isSuccessful && response.body()?.status == true
+        } catch (_: Exception) {
+            false
+        }
+    }
+}

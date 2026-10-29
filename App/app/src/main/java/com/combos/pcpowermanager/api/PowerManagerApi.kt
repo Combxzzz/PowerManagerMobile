@@ -22,4 +22,7 @@ interface PowerManagerApi {
 
     @POST("shutdown/cancel")
     suspend fun cancelShutdown() : Response<ShutdownCancelResponse>
+
+    @POST("shutdown/now")
+    suspend fun shutdownNow() : Response<ShutdownNowResponse>
 }

@@ -29,3 +29,8 @@ data class ShutdownCancelResponse(
     val cancelled : Boolean,
     val message : String
 )
+
+data class ShutdownNowResponse(
+    val message : String,
+    val status : Boolean
+)
